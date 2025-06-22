@@ -25,10 +25,24 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       z-index: 100;
     }
+    #reset-camera {
+      position: absolute;
+      top: 60px;
+      right: 20px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.8);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
   </style>
 </head>
 <body>
   <button id="theme-toggle">Тёмный фон</button>
+  <button id="reset-camera">Сброс камеры</button>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
@@ -39,10 +53,17 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111); // Начальный тёмный фон
     
-    const camera = new THREE.PerspectiveCamera(10, window.innerWidth/window.innerHeight, 0.5, 500);
-    camera.position.z = 10;
-    camera.position.y = 45;
-    camera.position.x = 35;
+    // Исходные параметры камеры
+    const initialCameraPosition = {
+      x: 55,
+      y: 85,
+      z: 40
+    };
+    const initialCameraLookAt = new THREE.Vector3(2, 6, 0.5);
+    
+    const camera = new THREE.PerspectiveCamera(4, window.innerWidth/window.innerHeight, 0.5, 500);
+    camera.position.set(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z);
+    camera.lookAt(initialCameraLookAt);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -62,7 +83,7 @@
       'model.glb',
       (gltf) => {
         scene.add(gltf.scene);
-      console.log ('модель загружена'); 
+        console.log('модель загружена');
       },
       undefined,
       (error) => console.error('Error:', error)
@@ -71,6 +92,7 @@
     // OrbitControls
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    controls.target.copy(initialCameraLookAt);
 
     // Переключение темы
     const themeToggle = document.getElementById('theme-toggle');
@@ -88,6 +110,15 @@
         themeToggle.textContent = 'Тёмный фон';
         ambientLight.intensity = 1.0; // Ярче для светлого фона
       }
+    });
+
+    // Сброс камеры
+    const resetCameraBtn = document.getElementById('reset-camera');
+    resetCameraBtn.addEventListener('click', () => {
+      camera.position.set(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z);
+      camera.lookAt(initialCameraLookAt);
+      controls.target.copy(initialCameraLookAt);
+      controls.update();
     });
 
     // Анимация
