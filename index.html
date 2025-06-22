@@ -39,8 +39,10 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111); // Начальный тёмный фон
     
-    const camera = new THREE.PerspectiveCamera(25, window.innerWidth/window.innerHeight, 0.5, 500);
-    camera.position.z = 5;
+    const camera = new THREE.PerspectiveCamera(10, window.innerWidth/window.innerHeight, 0.5, 500);
+    camera.position.z = 10;
+    camera.position.y = 45;
+    camera.position.x = 35;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
