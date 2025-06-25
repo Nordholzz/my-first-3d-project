@@ -41,8 +41,8 @@
   </style>
 </head>
 <body>
-  <button id="theme-toggle">Тёмный фон</button>
-  <button id="reset-camera">Сброс камеры</button>
+  <button id="theme-toggle">Light Mode</button>
+  <button id="reset-camera">Camera Reset</button>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
@@ -53,18 +53,7 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111); // Начальный тёмный фон
     
-    // Исходные параметры камеры
-    const initialCameraPosition = {
-      x: 55,
-      y: 85,
-      z: 40
-    };
-    const initialCameraLookAt = new THREE.Vector3(2, 6, 0.5);
-    
-    const camera = new THREE.PerspectiveCamera(4, window.innerWidth/window.innerHeight, 0.5, 500);
-    camera.position.set(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z);
-    camera.lookAt(initialCameraLookAt);
-
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -77,13 +66,31 @@
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
-    // Загрузка модели (замените на свою)
+    // Переменные для хранения модели и её центра
+    let model;
+    let modelCenter = new THREE.Vector3();
+    let cameraDistance = 5; // Начальная дистанция камеры
+
+    // Загрузка модели 
     const loader = new THREE.GLTFLoader();
     loader.load(
       'model.glb',
       (gltf) => {
-        scene.add(gltf.scene);
-        console.log('модель загружена');
+        model = gltf.scene;
+        scene.add(model);
+        
+        // Вычисляем центр модели
+        const box = new THREE.Box3().setFromObject(model);
+        box.getCenter(modelCenter);
+        
+        // Автоматически вычисляем оптимальную дистанцию камеры
+        const size = box.getSize(new THREE.Vector3());
+        cameraDistance = Math.max(size.x, size.y, size.z) * 1.5;
+        
+        // Устанавливаем камеру и контролы
+        resetCamera();
+        
+        console.log('Модель загружена. Центр:', modelCenter);
       },
       undefined,
       (error) => console.error('Error:', error)
@@ -92,7 +99,23 @@
     // OrbitControls
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.copy(initialCameraLookAt);
+    controls.dampingFactor = 0.05;
+
+    // Функция сброса камеры
+    function resetCamera() {
+      if (!model) return;
+      
+      // Позиционируем камеру на расстоянии от центра
+      camera.position.copy(modelCenter);
+      camera.position.x += cameraDistance;
+      camera.position.y += cameraDistance * 0.2;
+      camera.position.z += cameraDistance *0.5;
+      
+      // Направляем камеру на центр модели
+      camera.lookAt(modelCenter);
+      controls.target.copy(modelCenter);
+      controls.update();
+    }
 
     // Переключение темы
     const themeToggle = document.getElementById('theme-toggle');
@@ -102,24 +125,19 @@
       isDarkMode = !isDarkMode;
       
       if (isDarkMode) {
-        scene.background = new THREE.Color(0x111111); // Тёмный
-        themeToggle.textContent = 'Светлый фон';
-        ambientLight.intensity = 0.5; // Мягкий свет для тёмного фона
+        scene.background = new THREE.Color(0x111111);
+        themeToggle.textContent = 'Light Mode';
+        ambientLight.intensity = 0.5;
       } else {
-        scene.background = new THREE.Color(0xf0f0f0); // Светлый
-        themeToggle.textContent = 'Тёмный фон';
-        ambientLight.intensity = 1.0; // Ярче для светлого фона
+        scene.background = new THREE.Color(0xf0f0f0);
+        themeToggle.textContent = 'Dark Mode';
+        ambientLight.intensity = 1.0;
       }
     });
 
     // Сброс камеры
     const resetCameraBtn = document.getElementById('reset-camera');
-    resetCameraBtn.addEventListener('click', () => {
-      camera.position.set(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z);
-      camera.lookAt(initialCameraLookAt);
-      controls.target.copy(initialCameraLookAt);
-      controls.update();
-    });
+    resetCameraBtn.addEventListener('click', resetCamera);
 
     // Анимация
     function animate() {
